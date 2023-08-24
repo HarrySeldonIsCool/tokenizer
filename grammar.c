@@ -1,32 +1,57 @@
 #define HEAP_GRAMMARS
 #include "grammar.h"
-gram_vec global_grammars = {NULL, 0, 0};
 
-BASE_RULE(tok_or, (grammar* g, size_t len), g, len) {
+void dealloc_not(grammar g) {return;}
+void dealloc_nrec(grammar g) {
+	free(g.g);
+	return;
+}
+
+void dealloc_gramm_1rec(grammar g) {
+	tok_dealloc(*(grammar*)g.g);
+	free(g.g);
+	return;
+}
+
+void dealloc_gramm_rec(grammar g) {
+	for (int i = 0; i < g.len; i++) {
+		tok_dealloc(((grammar*)g.g)[i]);
+	}
+	free(g.g);
+	return;
+}
+
+grammar no_dealloc(grammar g) {
+	g.deal = dealloc_not;
+	return g;
+}
+
+BASE_RULE(tok_or, (grammar* g, size_t len), g, len, dealloc_gramm_rec) {
 	for (int i = 0; i < g.len; i++) {
 		if (tokenize(s, ((grammar*)g.g)[i], ts)) return 1;
 	}
 	return 0;
 }
 
-BASE_RULE(tok_chain, (grammar* g, size_t len), g, len) {
+BASE_RULE(tok_chain, (grammar* g, size_t len), g, len, dealloc_gramm_rec) {
 	for (int i = 0; i < g.len; i++) {
 		if (!tokenize(s, ((grammar*)g.g)[i], ts)) return 0;
 	}
 	return 1;
 }
 
-BASE_RULE(tok_repeat0, (grammar* g), g, 1) {
+BASE_RULE(tok_repeat0, (grammar* g), g, 1, dealloc_gramm_1rec) {
 	while (tokenize(s, *(grammar*)g.g, ts));
 	return 1;
 }
 
 grammar tok_repeat1(grammar* g) {
-	CHAINH(g2, *g, tok_repeat0(g));
+	//we have to keep only one instance of each grammar deallocatable (if we wanna deallocate :)
+	CHAINH(g2, no_dealloc(*g), tok_repeat0(g));
 	return g2;
 }
 
-BASE_RULE(tok_lit, (char* a, size_t _len), a, strlen(a)) {
+BASE_RULE(tok_lit, (char* a, size_t _len), a, strlen(a), dealloc_nrec) {
 	char* a = (char*)g.g;
 	if (strlen(*s) < g.len) return 0;
 	for (int i = 0; a[i] && (*s)[i]; i++){
@@ -37,7 +62,7 @@ BASE_RULE(tok_lit, (char* a, size_t _len), a, strlen(a)) {
 	return 1;
 }
 
-BASE_RULE(tok_group, (grammar* g), g, 1) {
+BASE_RULE(tok_group, (grammar* g), g, 1, dealloc_gramm_1rec) {
 	size_t base = ts->len;
 	if (!tokenize(s, *(grammar*)g.g, ts)) return 0;
 	if (ts->len <= base + 1) return 1;
@@ -50,13 +75,13 @@ BASE_RULE(tok_group, (grammar* g), g, 1) {
 
 //a bit of a hack, using the len field to store the token type
 //luckily, len is also just metadata for f, which should NOT be depended on BY ANYONE, EVER
-BASE_RULE(tok_cast, (grammar* g, int16_t i), g, i) {
+BASE_RULE(tok_cast, (grammar* g, int16_t i), g, i, dealloc_gramm_1rec) {
 	if (!tokenize(s, *(grammar*)g.g, ts)) return 0;
 	ts->bf[ts->len - 1].t = g.len;
 	return 1;
 }
 
-BASE_RULE(tok_char_class, (char* a, size_t _len), a, strlen(a)) {
+BASE_RULE(tok_char_class, (char* a, size_t _len), a, strlen(a), dealloc_nrec) {
 	char* a = (char*)g.g-1;
 	while (*++a) {
 		if (**s != *a) continue;
@@ -67,18 +92,6 @@ BASE_RULE(tok_char_class, (char* a, size_t _len), a, strlen(a)) {
 	return 0;
 }
 
-void push_gram(gram_vec* v, grammar* g){
-	if (++v->len > v->cap) {
-		v->cap = v->cap * 2 + 1;
-		v->g = realloc(v->g, sizeof(grammar*) * v->cap);
-	}
-	v->g[v->len] = g;
-	return;
-}
-
-void free_grammars(gram_vec v) {
-	for (int i = 0; i < v.len; i++) {
-		free(v.g[i]);
-	}
-	return;
+void tok_dealloc(grammar g) {
+	g.deal(g);
 }

@@ -13,6 +13,7 @@
 //-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //heap allocation macros
 //-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 //puts ... (of type TP) onto heap and calls tok_OP on it (mainly for chain and or)
 #define _HEAP_OP(TGT, TP, OP, ...) TP* _LOCAL_VAR; grammar TGT;\
 			{TP __grmr_chn[] = __VA_ARGS__; \
@@ -64,9 +65,9 @@
 //malicius macros and type definitions
 //-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-#define BASE_RULE(NAME, PARAMS, G, LEN) ATOM_DEF(NAME); BASE_RULE2(NAME, PARAMS, G, LEN) ATOM_DEF(NAME)
+#define BASE_RULE(NAME, PARAMS, G, LEN, DEAL) ATOM_DEF(NAME); BASE_RULE2(NAME, PARAMS, G, LEN, DEAL) ATOM_DEF(NAME)
 
-#define BASE_RULE2(NAME, PARAMS, G, LEN) grammar NAME PARAMS { grammar g2; g2.f = _##NAME; g2.g = G; g2.len = LEN; return g2;}
+#define BASE_RULE2(NAME, PARAMS, G, LEN, DEAL) grammar NAME PARAMS { grammar g2; g2.f = _##NAME; g2.g = G; g2.len = LEN; g2.deal = DEAL; return g2;}
 #define ATOM_DEF(NAME) int _##NAME (sbf s, tokens* ts, grammar g)
 
 //g acts like metadata and the entire grammar is passed into f, since C has no closures
@@ -75,6 +76,7 @@ typedef struct grammr_t{
 	int (*f)(sbf, tokens*, struct grammr_t);
 	void* g;
 	size_t len;
+	void (*deal)(struct grammr_t);
 } grammar;
 
 #include "tokenizer.h"
@@ -91,9 +93,7 @@ typedef struct {
 //necessary function declarations
 //-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-void push_gram(gram_vec*, grammar*);
-void free_grammars(gram_vec);
-
+void tok_dealloc(grammar);
 grammar tok_or(grammar* g, size_t len);
 grammar tok_repeat0(grammar* g);
 grammar tok_repeat1(grammar* g);
