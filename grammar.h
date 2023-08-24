@@ -10,45 +10,59 @@
 #define _CONCAT(A, B) _CONCC(A, B)
 #define _LOCAL_VAR _CONCAT(__grmr_chn2, __LINE__)
 
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//heap allocation macros
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //puts ... (of type TP) onto heap and calls tok_OP on it (mainly for chain and or)
 #define _HEAP_OP(TGT, TP, OP, ...) TP* _LOCAL_VAR; grammar TGT;\
 			{TP __grmr_chn[] = __VA_ARGS__; \
 			_LOCAL_VAR = malloc(sizeof(__grmr_chn)); \
 			memcpy(_LOCAL_VAR, __grmr_chn, sizeof(__grmr_chn)); \
 			TGT = tok_##OP(_LOCAL_VAR, sizeof(__grmr_chn) / sizeof(TP));}
-#define _STACK_OP(TGT, TP, OP, ...) TP _CONCAT(__grmr_, __LINE__)[] = __VA_ARGS__; \
-				grammar TGT = tok_##OP(_CONCAT(__grmr_, __LINE__), sizeof(_CONCAT(__grmr_, __LINE__)) / sizeof(TP))
 
 #define CHAINH(TGT, ...) _HEAP_OP(TGT, grammar, chain, {__VA_ARGS__})
-#define CHAIN(TGT, ...) _STACK_OP(TGT, grammar, chain, {__VA_ARGS__})
 #define ORH(TGT, ...) _HEAP_OP(TGT, grammar, or, {__VA_ARGS__})
-#define OR(TGT, ...) _STACK_OP(TGT, grammar, or, {__VA_ARGS__})
 
-#ifndef CUSTOM_LITERAL 
-//presumes literal has code 0, if yours does not, define CUSTOM_LITERAL
 #define LITERALH(TGT, SRC) _HEAP_OP(TGT, char, lit, SRC)
-#define LITERAL(TGT, SRC) _STACK_OP(TGT, char, lit, SRC)
 #define CHAR_CLASSH(TGT, SRC) _HEAP_OP(TGT, char, char_class, SRC)
-#define CHAR_CLASS(TGT, SRC) _STACK_OP(TGT, char, char_class, SRC)
-#endif
 
 #define _SHEAP_OP(TGT, TP, OP, SRC) TP* _LOCAL_VAR = malloc(sizeof(TP)); \
 				*_LOCAL_VAR = SRC; \
 				grammar TGT = tok_##OP(_LOCAL_VAR)
-#define _SSTACK_OP(TGT, TP, OP, SRC) grammar TGT = tok_##OP(&SRC)
 
 #define REPEAT1H(TGT, SRC) _SHEAP_OP(TGT, grammar, repeat1, SRC)
-#define REPEAT1(TGT, SRC) _SSTACK_OP(TGT, grammar, repeat1, SRC)
 #define REPEAT0H(TGT, SRC) _SHEAP_OP(TGT, grammar, repeat0, SRC)
-#define REPEAT0(TGT, SRC) _SSTACK_OP(TGT, grammar, repeat0, SRC)
-
 #define GROUPH(TGT, SRC) _SHEAP_OP(TGT, grammar, group, SRC)
-#define GROUP(TGT, SRC) _SSTACK_OP(TGT, grammar, group, SRC)
 
 #define CASTH(TGT, SRC, TYPE) grammar* _LOCAL_VAR = malloc(sizeof(grammar)); \
 			*_LOCAL_VAR = SRC; \
 			grammar TGT = tok_cast(_LOCAL_VAR, TYPE)
+
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//stack allocation macros
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#define _STACK_OP(TGT, TP, OP, ...) TP _CONCAT(__grmr_, __LINE__)[] = __VA_ARGS__; \
+				grammar TGT = tok_##OP(_CONCAT(__grmr_, __LINE__), sizeof(_CONCAT(__grmr_, __LINE__)) / sizeof(TP))
+
+#define CHAIN(TGT, ...) _STACK_OP(TGT, grammar, chain, {__VA_ARGS__})
+#define OR(TGT, ...) _STACK_OP(TGT, grammar, or, {__VA_ARGS__})
+
+#define LITERAL(TGT, SRC) _STACK_OP(TGT, char, lit, SRC)
+#define CHAR_CLASS(TGT, SRC) _STACK_OP(TGT, char, char_class, SRC)
+
+#define _SSTACK_OP(TGT, TP, OP, SRC) grammar TGT = tok_##OP(&SRC)
+
+#define REPEAT1(TGT, SRC) _SSTACK_OP(TGT, grammar, repeat1, SRC)
+#define REPEAT0(TGT, SRC) _SSTACK_OP(TGT, grammar, repeat0, SRC)
+
+#define GROUP(TGT, SRC) _SSTACK_OP(TGT, grammar, group, SRC)
+
 #define CAST(TGT, SRC, TYPE) grammar TGT = tok_cast(&SRC, TYPE);
+
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//malicius macros and type definitions
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 #define BASE_RULE(NAME, PARAMS, G, LEN) ATOM_DEF(NAME); BASE_RULE2(NAME, PARAMS, G, LEN) ATOM_DEF(NAME)
 
@@ -66,6 +80,19 @@ typedef struct grammr_t{
 #include "tokenizer.h"
 
 typedef int (*atom_fn)(sbf, tokens*, grammar);
+
+typedef struct {
+	grammar** g;
+	size_t len;
+	size_t cap;
+} gram_vec;
+
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//necessary function declarations
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+void push_gram(gram_vec*, grammar*);
+void free_grammars(gram_vec);
 
 grammar tok_or(grammar* g, size_t len);
 grammar tok_repeat0(grammar* g);

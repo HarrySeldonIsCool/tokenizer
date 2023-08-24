@@ -1,4 +1,6 @@
+#define HEAP_GRAMMARS
 #include "grammar.h"
+gram_vec global_grammars = {NULL, 0, 0};
 
 BASE_RULE(tok_or, (grammar* g, size_t len), g, len) {
 	for (int i = 0; i < g.len; i++) {
@@ -63,4 +65,20 @@ BASE_RULE(tok_char_class, (char* a, size_t _len), a, strlen(a)) {
 		return 1;
 	}
 	return 0;
+}
+
+void push_gram(gram_vec* v, grammar* g){
+	if (++v->len > v->cap) {
+		v->cap = v->cap * 2 + 1;
+		v->g = realloc(v->g, sizeof(grammar*) * v->cap);
+	}
+	v->g[v->len] = g;
+	return;
+}
+
+void free_grammars(gram_vec v) {
+	for (int i = 0; i < v.len; i++) {
+		free(v.g[i]);
+	}
+	return;
 }
