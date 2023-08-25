@@ -26,6 +26,15 @@ grammar no_dealloc(grammar g) {
 	return g;
 }
 
+void tok_dealloc(grammar g) {
+	g.deal(g);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//base rules
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//all are greedy
+
 BASE_RULE(tok_or, (grammar* g, size_t len), g, len, dealloc_gramm_rec) {
 	for (int i = 0; i < g.len; i++) {
 		if (tokenize(s, ((grammar*)g.g)[i], ts)) return 1;
@@ -92,6 +101,14 @@ BASE_RULE(tok_char_class, (char* a, size_t _len), a, strlen(a), dealloc_nrec) {
 	return 0;
 }
 
-void tok_dealloc(grammar g) {
-	g.deal(g);
+BASE_RULE(tok_ignore, (grammar* g), g, 1, dealloc_gramm_1rec) {
+	size_t base = ts->len;
+	if (!tokenize(s, *(grammar*)g.g, ts)) return 0;
+	ts->len = base;
+	return 1;
+}
+
+BASE_RULE(tok_maybe, (grammar* g), g, 1, dealloc_gramm_1rec) {
+	tokenize(s, *(grammar*)g.g, ts);
+	return 1;
 }
