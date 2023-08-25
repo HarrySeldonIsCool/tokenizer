@@ -21,21 +21,24 @@
 			memcpy(_LOCAL_VAR, __grmr_chn, sizeof(__grmr_chn)); \
 			TGT = tok_##OP(_LOCAL_VAR, sizeof(__grmr_chn) / sizeof(TP));}
 
-#define CHAINH(TGT, ...) _HEAP_OP(TGT, grammar, chain, {__VA_ARGS__})
-#define ORH(TGT, ...) _HEAP_OP(TGT, grammar, or, {__VA_ARGS__})
+#define CHAIN(TGT, ...) _HEAP_OP(TGT, grammar, chain, {__VA_ARGS__})
+#define OR(TGT, ...) _HEAP_OP(TGT, grammar, or, {__VA_ARGS__})
 
-#define LITERALH(TGT, SRC) _HEAP_OP(TGT, char, lit, SRC)
-#define CHAR_CLASSH(TGT, SRC) _HEAP_OP(TGT, char, char_class, SRC)
+#define LITERAL(TGT, SRC) _HEAP_OP(TGT, char, lit, SRC)
+#define CHAR_CLASS(TGT, SRC) _HEAP_OP(TGT, char, char_class, SRC)
 
 #define _SHEAP_OP(TGT, TP, OP, SRC) TP* _LOCAL_VAR = malloc(sizeof(TP)); \
 				*_LOCAL_VAR = SRC; \
 				grammar TGT = tok_##OP(_LOCAL_VAR)
 
-#define REPEAT1H(TGT, SRC) _SHEAP_OP(TGT, grammar, repeat1, SRC)
-#define REPEAT0H(TGT, SRC) _SHEAP_OP(TGT, grammar, repeat0, SRC)
-#define GROUPH(TGT, SRC) _SHEAP_OP(TGT, grammar, group, SRC)
+#define REPEAT1(TGT, SRC) _SHEAP_OP(TGT, grammar, repeat1, SRC)
+#define REPEAT0(TGT, SRC) _SHEAP_OP(TGT, grammar, repeat0, SRC)
 
-#define CASTH(TGT, SRC, TYPE) grammar* _LOCAL_VAR = malloc(sizeof(grammar)); \
+#define GROUP(TGT, SRC) _SHEAP_OP(TGT, grammar, group, SRC)
+#define IGNORE(TGT, SRC) _SHEAP_OP(TGT, grammar, ignore, SRC)
+#define MAYBE(TGT, SRC) _SHEAP_OP(TGT, grammar, maybe, SRC)
+
+#define CAST(TGT, SRC, TYPE) grammar* _LOCAL_VAR = malloc(sizeof(grammar)); \
 			*_LOCAL_VAR = SRC; \
 			grammar TGT = tok_cast(_LOCAL_VAR, TYPE)
 
@@ -46,20 +49,22 @@
 #define _STACK_OP(TGT, TP, OP, ...) TP _CONCAT(__grmr_, __LINE__)[] = __VA_ARGS__; \
 				grammar TGT = tok_##OP(_CONCAT(__grmr_, __LINE__), sizeof(_CONCAT(__grmr_, __LINE__)) / sizeof(TP))
 
-#define CHAIN(TGT, ...) _STACK_OP(TGT, grammar, chain, {__VA_ARGS__})
-#define OR(TGT, ...) _STACK_OP(TGT, grammar, or, {__VA_ARGS__})
+#define CHAINS(TGT, ...) _STACK_OP(TGT, grammar, chain, {__VA_ARGS__})
+#define ORS(TGT, ...) _STACK_OP(TGT, grammar, or, {__VA_ARGS__})
 
-#define LITERAL(TGT, SRC) _STACK_OP(TGT, char, lit, SRC)
-#define CHAR_CLASS(TGT, SRC) _STACK_OP(TGT, char, char_class, SRC)
+#define LITERALS(TGT, SRC) _STACK_OP(TGT, char, lit, SRC)
+#define CHAR_CLASSS(TGT, SRC) _STACK_OP(TGT, char, char_class, SRC)
 
 #define _SSTACK_OP(TGT, TP, OP, SRC) grammar TGT = tok_##OP(&SRC)
 
-#define REPEAT1(TGT, SRC) _SSTACK_OP(TGT, grammar, repeat1, SRC)
-#define REPEAT0(TGT, SRC) _SSTACK_OP(TGT, grammar, repeat0, SRC)
+#define REPEAT1S(TGT, SRC) _SSTACK_OP(TGT, grammar, repeat1, SRC)
+#define REPEAT0S(TGT, SRC) _SSTACK_OP(TGT, grammar, repeat0, SRC)
 
-#define GROUP(TGT, SRC) _SSTACK_OP(TGT, grammar, group, SRC)
+#define GROUPS(TGT, SRC) _SSTACK_OP(TGT, grammar, group, SRC)
+#define IGNORES(TGT, SRC) _SSTACK_OP(TGT, grammar, ignore, SRC)
+#define MAYBES(TGT, SRC) _SSTACK_OP(TGT, grammar, maybe, SRC)
 
-#define CAST(TGT, SRC, TYPE) grammar TGT = tok_cast(&SRC, TYPE);
+#define CASTS(TGT, SRC, TYPE) grammar TGT = tok_cast(&SRC, TYPE);
 
 //-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //malicius macros and type definitions
@@ -102,4 +107,6 @@ grammar tok_lit(char* s, size_t _len);
 grammar tok_group(grammar* g);
 grammar tok_cast(grammar* g, int16_t i);
 grammar tok_char_class(char* a, size_t _len);
+grammar tok_ignore(grammar* g);
+grammar tok_maybe(grammar* g);
 #endif

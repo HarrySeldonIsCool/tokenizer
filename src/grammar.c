@@ -56,7 +56,7 @@ BASE_RULE(tok_repeat0, (grammar* g), g, 1, dealloc_gramm_1rec) {
 
 grammar tok_repeat1(grammar* g) {
 	//we have to keep only one instance of each grammar deallocatable (if we wanna deallocate :)
-	CHAINH(g2, no_dealloc(*g), tok_repeat0(g));
+	CHAIN(g2, no_dealloc(*g), tok_repeat0(g));
 	return g2;
 }
 
